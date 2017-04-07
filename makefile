@@ -1,11 +1,11 @@
 all:
-	gcc -o prog main.c
+	gcc -o histogram main.c
 
 debug:
 	gcc main.c -g
 
 clean:
-	rm -r -f prog
+	rm -r -f histogram
 
 test:
 	make debug

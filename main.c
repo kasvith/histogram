@@ -8,6 +8,12 @@
 #include <ctype.h>
 
 #define DEFAULT_NUMBER 10
+#define MAX_WIDTH 80
+#define HORIZONTAL_BAR "\e(0\x71\e(B"
+#define VERTICAL_BAR "\e(0\x78\e(B"
+#define LEFT_BOTTOM "\e(0\x6d\e(B"
+#define COLOR_GRAY "\e[100m"
+#define COLOR_RESET "\x1B[0m"
 
 typedef struct _word{
     char* content;//assume no word is greater than 100 chars
@@ -21,8 +27,6 @@ typedef struct _file{
 
 //function headers
 int isNum(const char*);//check is a string a valid number
-void printVLine();//prints a vertical line char without new line
-void printVLine();// prints a horizontal line char without newline
 void printUsage();//prints usage
 char* stripCharacters(char* str);//strips characters from a string and returns a new copy of that
 void insertWord(char* str);//inserts a word into LL if it does not exists, otherwise count it up
@@ -32,8 +36,9 @@ int isWordsEmpty();//returns 0 if LL empty
 int getWordCount();//returns the length of word list
 word* findWord(char* key);//searchs a word, if not found return NULL
 void sortWordsByFrequency();//sorts words descending order by frequency
-void parseFile(char* fname, int flag_word);//parse a single file
-
+void parseFile(char* fname);//parse a single file
+void printBar(word* data);//prints a bar graph
+void printEndLine();//print end line
 
 //definitions
 word* words = NULL;
@@ -43,12 +48,19 @@ file* files = NULL;
 file* currFile = NULL;
 
 int count = 0;
+int flag_scaled = 0;
+int flag_word = 1;
+int max_length = -1;
+int optimal_length = 0;
+float max_fraction = 1.0;
 //end definitions
 
 int main(int argc,  char **argv) {
     int length = DEFAULT_NUMBER;
-    int flag_word = 1;
-    int flag_scaled = 0;
+
+    //used to check whether c and w are both used, if they are equal both used
+    int flag_w = -1;
+    int flag_c = 1;
 
     int i,opt_arg;
     for (i = 0; i < argc; i++) {
@@ -56,8 +68,10 @@ int main(int argc,  char **argv) {
 
         if(strcmp(arg, "-w") == 0){
             flag_word = 1;
+            flag_w = 0;
         }else if(strcmp(arg,"-c") == 0){
             flag_word = 0;
+            flag_c = 0;
         }else if(strcmp(arg ,"--scaled") == 0){
             flag_scaled = 1;
         }else if(strcmp(arg ,"-l") == 0){
@@ -86,9 +100,13 @@ int main(int argc,  char **argv) {
             //we assume they are file names
             if(i != opt_arg && i != 0){
                 insertFile(argv[i]);
-                //insertWord(argv[i]);
             }
         }
+    }
+
+    if(flag_c == flag_w){
+        printf("[-c] and [-w] cannot use together\n");
+        printUsage();
     }
     //end handling user input
 
@@ -102,26 +120,110 @@ int main(int argc,  char **argv) {
         exit(0);
     }
 
-    //iterate over all file names
+   //run through the list
     file* fPtr = files;
     while (fPtr != NULL){
-        parseFile(fPtr->fname, flag_word);
+        parseFile(fPtr->fname);
         fPtr = fPtr->next;
     }
 
     sortWordsByFrequency();
-
     word* pWords = words;
+    //sets offset
+    if(flag_word){
+        int len = length;
+
+        while (pWords != NULL && len > 0){
+            int l = strlen(pWords->content);
+            if(l > max_length)
+                max_length = l + 1;
+
+            pWords = pWords->next;
+            len--;
+        }
+    }else{
+        //we already know
+        max_length = 2;
+    }
+
+
+    //iterate over all file names and print bar graphs
+    pWords = words;
+    if(words == NULL){
+        exit(0);
+    }
+    optimal_length = MAX_WIDTH - max_length - 7;
+    if(flag_scaled){
+        max_fraction = (float)pWords->count/(float)count;
+        //printf("max f = %f\n", max_fraction);
+    }
+
+    pWords = words;
     while (pWords != NULL && length > 0){
-        printf("%s => %.2f\n", pWords->content, ((float)pWords->count*100.0/(float)count));
+        printBar(pWords);
         pWords = pWords->next;
         length--;
     }
 
+    printEndLine();
+
     return 0;
 }
 
-void parseFile(char* fname, int flag_word){
+void printBar(word* data){
+    float precentage = ((float)data->count)/((float)count);
+    int sz = (optimal_length*precentage)/max_fraction;
+
+    int i;
+
+    //first row
+    printf("%*s %s", max_length, " ", VERTICAL_BAR);
+    printf("%s", COLOR_GRAY);
+    for(i = 0; i < sz ; i++)
+        printf(" ");
+    printf("%s", COLOR_RESET);
+    printf("\n");
+    //end first row
+
+
+    //second row
+    printf("%*s %s", max_length, data->content, VERTICAL_BAR);
+    printf("%s", COLOR_GRAY);
+    for(i = 0; i < sz ; i++)
+        printf(" ");
+    printf("%s", COLOR_RESET);
+    printf("%.2f%%\n", precentage*100.0);
+    //end second row
+
+    //third row
+    printf("%*s %s", max_length, " ", VERTICAL_BAR);
+    printf("%s", COLOR_GRAY);
+    for(i = 0; i < sz ; i++)
+        printf(" ");
+    printf("%s", COLOR_RESET);
+    printf("\n");
+    //end third row
+
+    //forth row
+    printf("%*s %s\n", max_length, " ", VERTICAL_BAR);
+    //end forth row
+}
+
+void printEndLine(){
+    int i;
+    for(i = 0; i <= max_length; i++)
+        printf(" ");
+
+    printf("%s", LEFT_BOTTOM);
+
+    for(i = 0; i < MAX_WIDTH - (max_length + 2) ; i++){
+        printf("%s", HORIZONTAL_BAR);
+    }
+
+    printf("\n");
+}
+
+void parseFile(char* fname){
     FILE* fp;
     fp = fopen(fname, "r");
 
@@ -130,7 +232,6 @@ void parseFile(char* fname, int flag_word){
         exit(EXIT_FAILURE);
     }
 
-
     if(flag_word){
         char w[1000];
         while(fscanf(fp, "%s ", w) != EOF){
@@ -138,6 +239,7 @@ void parseFile(char* fname, int flag_word){
         }
     }else{
         char c;
+        max_length = 2;
         while (fscanf(fp, "%c", &c) != EOF){
             char a[2];
             a[0] = c;
@@ -199,6 +301,7 @@ void insertWord(char* str){
     char* s = stripCharacters(str);
     word* w = findWord(s);
 
+
     if(w != NULL){
         w->count++;
         count++;
@@ -206,10 +309,10 @@ void insertWord(char* str){
         if(s && strlen(s) > 0){
             word* tmp = (word *)malloc(sizeof(word))  ;
             tmp->content = s;
+            //printf("%s\n",s);
             tmp->count = 1;
             tmp->next = words;
             words = tmp;
-
             count++;
         }
     }
@@ -281,14 +384,6 @@ char* stripCharacters(char* str){
 void printUsage(){
     printf("usage: freq [-l length] [-w | -c] [--scaled] filename1 filename2 ..\n");
     exit(EXIT_FAILURE);
-}
-
-void printVLine() {
-    printf("%s", "\e(0\x78\e(B");
-}
-
-void printHLine() {
-    printf("%s", "\e(0\x71\e(B");
 }
 
 int isNum(const char* str){
