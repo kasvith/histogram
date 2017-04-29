@@ -80,8 +80,8 @@ int main(int argc,  char **argv) {
                 if(isNum(argv[opt_arg])){
                     length = atoi(argv[opt_arg]);
                     if(length < 0){
-                        printf("Length should be a positive number\n");
-                        exit(EXIT_FAILURE);
+                        printf("Invalid options for [-l]\n");
+                        printUsage();
                     }
                 }else{
                     printf("Invalid options for [-l]\n");
@@ -127,6 +127,18 @@ int main(int argc,  char **argv) {
         fPtr = fPtr->next;
     }
 
+    //reverse list
+   	word* currNode = words;
+   	word* nextNode = NULL;
+   	word* prevNode = NULL;
+   	while(currNode!=NULL){
+	     nextNode = currNode->next;
+	     currNode->next = prevNode;
+	     prevNode = currNode;
+	     currNode = nextNode;
+	}
+	words = prevNode;
+   
     sortWordsByFrequency();
     word* pWords = words;
     //sets offset
@@ -152,10 +164,9 @@ int main(int argc,  char **argv) {
     if(words == NULL){
         exit(0);
     }
-    optimal_length = MAX_WIDTH - max_length - 7;
+    optimal_length = MAX_WIDTH - max_length - 9;
     if(flag_scaled){
         max_fraction = (float)pWords->count/(float)count;
-        //printf("max f = %f\n", max_fraction);
     }
 
     pWords = words;
@@ -174,44 +185,47 @@ void printBar(word* data){
     float precentage = ((float)data->count)/((float)count);
     int sz = (optimal_length*precentage)/max_fraction;
 
+    //printf("prec %f, size = %d\n", precentage, sz);
+
     int i;
 
     //first row
-    printf("%*s %s", max_length, " ", VERTICAL_BAR);
-    printf("%s", COLOR_GRAY);
-    for(i = 0; i < sz ; i++)
-        printf(" ");
-    printf("%s", COLOR_RESET);
+    printf(" %*s%s", -1*(max_length), " ", VERTICAL_BAR);
+
+        for(i = 0; i < sz; i++)
+        	printf("%c", 176);
+    
     printf("\n");
     //end first row
 
 
     //second row
-    printf("%*s %s", max_length, data->content, VERTICAL_BAR);
-    printf("%s", COLOR_GRAY);
-    for(i = 0; i < sz ; i++)
-        printf(" ");
-    printf("%s", COLOR_RESET);
+    printf(" %*s%s", -1*(max_length), data->content, VERTICAL_BAR);
+    
+        for(i = 0; i < sz; i++)
+        	printf("%c", 176);
+    
     printf("%.2f%%\n", precentage*100.0);
     //end second row
 
     //third row
-    printf("%*s %s", max_length, " ", VERTICAL_BAR);
-    printf("%s", COLOR_GRAY);
-    for(i = 0; i < sz ; i++)
-        printf(" ");
-    printf("%s", COLOR_RESET);
+    printf(" %*s%s", -1*(max_length), " ", VERTICAL_BAR);
+
+        for(i = 0; i < sz; i++)
+        	printf("%c", 176);
+    
     printf("\n");
     //end third row
 
     //forth row
-    printf("%*s %s\n", max_length, " ", VERTICAL_BAR);
+    printf(" %*s%s\n", -1*(max_length ), " ", VERTICAL_BAR);
     //end forth row
 }
 
 void printEndLine(){
     int i;
-    for(i = 0; i <= max_length; i++)
+
+    for(i = -1; i < max_length; i++)
         printf(" ");
 
     printf("%s", LEFT_BOTTOM);
@@ -299,6 +313,12 @@ int getWordCount(){
 
 void insertWord(char* str){
     char* s = stripCharacters(str);
+    int i;
+    for (i = 0; i < strlen(s); ++i)
+	{
+		s[i] = tolower(s[i]);
+	}
+    
     word* w = findWord(s);
 
 
@@ -309,7 +329,6 @@ void insertWord(char* str){
         if(s && strlen(s) > 0){
             word* tmp = (word *)malloc(sizeof(word))  ;
             tmp->content = s;
-            //printf("%s\n",s);
             tmp->count = 1;
             tmp->next = words;
             words = tmp;
