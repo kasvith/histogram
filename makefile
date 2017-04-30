@@ -1,5 +1,5 @@
 all:
-	gcc -o histogram main.c
+	gcc -o histogram main.c -std=c99
 
 debug:
 	gcc main.c -g
