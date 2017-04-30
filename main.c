@@ -9,9 +9,10 @@
 
 #define DEFAULT_NUMBER 10
 #define MAX_WIDTH 80
-#define HORIZONTAL_BAR "\e(0\x71\e(B"
-#define VERTICAL_BAR "\e(0\x78\e(B"
-#define LEFT_BOTTOM "\e(0\x6d\e(B"
+#define HORIZONTAL_BAR "\u2500"
+#define VERTICAL_BAR "\u2502"
+#define LEFT_BOTTOM "\u2514"
+#define BOX_CHAR "\u2591"
 #define COLOR_GRAY "\e[100m"
 #define COLOR_RESET "\x1B[0m"
 
@@ -128,16 +129,16 @@ int main(int argc,  char **argv) {
     }
 
     //reverse list
-   	word* currNode = words;
-   	word* nextNode = NULL;
-   	word* prevNode = NULL;
-   	while(currNode!=NULL){
-	     nextNode = currNode->next;
-	     currNode->next = prevNode;
-	     prevNode = currNode;
-	     currNode = nextNode;
-	}
-	words = prevNode;
+    word* currNode = words;
+    word* nextNode = NULL;
+    word* prevNode = NULL;
+    while(currNode!=NULL){
+         nextNode = currNode->next;
+         currNode->next = prevNode;
+         prevNode = currNode;
+         currNode = nextNode;
+    }
+    words = prevNode;
    
     sortWordsByFrequency();
     word* pWords = words;
@@ -164,10 +165,26 @@ int main(int argc,  char **argv) {
     if(words == NULL){
         exit(0);
     }
-    optimal_length = MAX_WIDTH - max_length - 9;
+    
+    float fraction = (float)pWords->count/(float)count;
+
     if(flag_scaled){
-        max_fraction = (float)pWords->count/(float)count;
+        max_fraction = fraction;
     }
+
+    
+    int precentage_offset;
+    float precentage = fraction*100.0;
+
+    if (precentage >= 0 && precentage < 10)
+        precentage_offset = 7;
+    else if(precentage >= 10 && precentage < 100)
+        precentage_offset = 8;
+    else
+        precentage_offset = 9;
+
+
+    optimal_length = MAX_WIDTH - max_length - precentage_offset;
 
     pWords = words;
     while (pWords != NULL && length > 0){
@@ -184,16 +201,13 @@ int main(int argc,  char **argv) {
 void printBar(word* data){
     float precentage = ((float)data->count)/((float)count);
     int sz = (optimal_length*precentage)/max_fraction;
-
-    //printf("prec %f, size = %d\n", precentage, sz);
-
     int i;
 
     //first row
     printf(" %*s%s", -1*(max_length), " ", VERTICAL_BAR);
 
         for(i = 0; i < sz; i++)
-        	printf("%c", 176);
+            printf("%s", BOX_CHAR);
     
     printf("\n");
     //end first row
@@ -203,7 +217,7 @@ void printBar(word* data){
     printf(" %*s%s", -1*(max_length), data->content, VERTICAL_BAR);
     
         for(i = 0; i < sz; i++)
-        	printf("%c", 176);
+            printf("%s", BOX_CHAR);
     
     printf("%.2f%%\n", precentage*100.0);
     //end second row
@@ -212,7 +226,7 @@ void printBar(word* data){
     printf(" %*s%s", -1*(max_length), " ", VERTICAL_BAR);
 
         for(i = 0; i < sz; i++)
-        	printf("%c", 176);
+            printf("%s", BOX_CHAR);
     
     printf("\n");
     //end third row
@@ -315,9 +329,9 @@ void insertWord(char* str){
     char* s = stripCharacters(str);
     int i;
     for (i = 0; i < strlen(s); ++i)
-	{
-		s[i] = tolower(s[i]);
-	}
+    {
+        s[i] = tolower(s[i]);
+    }
     
     word* w = findWord(s);
 
