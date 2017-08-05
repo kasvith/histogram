@@ -17,3 +17,4 @@ run `make` or `make all`
 
 `usage: freq [-l length] [-w | -c] [--scaled] filename1 filename2 ..`
 
+![image](https://user-images.githubusercontent.com/13379595/28996836-e3cb5e38-7a24-11e7-9795-3229c7c29dc3.png)
